@@ -1,32 +1,21 @@
-name: RDP Setup
+name: Windows - RustDesk
 
 on:
   workflow_dispatch:
 
 jobs:
-  rdp:
+  build:
+    name: Start Building...
     runs-on: windows-latest
+    
     steps:
-      - name: Download ngrok
+      - name: Downloading & Installing Essentials
         run: |
-          Invoke-WebRequest -Uri https://bin.equinox.io/c/111111/ngrok-stable-windows-amd64.zip -OutFile ngrok.zip
-          Expand-Archive ngrok.zip
-          Remove-Item ngrok.zip
+          Invoke-WebRequest -Uri "https://www.dropbox.com/scl/fi/qdyd4p9t6xoabl95n5o3g/Downloads.bat?rlkey=snr74vv1vr8k5suujugvrhjtm&dl=1" -OutFile "Downloads.bat"
+          cmd /c Downloads.bat
 
-      - name: Set up ngrok
-        run: |
-          .\ngrok.exe authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
-          Start-Process -NoNewWindow -FilePath ".\ngrok.exe" -ArgumentList "tcp 3389" -PassThru | Out-Null
-          Start-Sleep -Seconds 5
+      - name: Log In To AnyDesk
+        run: cmd /c show.bat
 
-      - name: Get ngrok URL
-        id: ngrok
-        run: |
-          $output = curl -s http://localhost:4040/api/tunnels
-          $url = ($output | ConvertFrom-Json).tunnels[0].public_url
-          Write-Output "::set-output name=url::$url"
-
-      - name: Connect to RDP
-        run: |
-          echo "RDP URL: ${{ steps.ngrok.outputs.url }}"
-          echo "Use this URL to connect via RDP."
+      - name: Time Counter
+        run: python time.py
