@@ -1,0 +1,32 @@
+name: RDP Setup
+
+on:
+  workflow_dispatch:
+
+jobs:
+  rdp:
+    runs-on: windows-latest
+    steps:
+      - name: Download ngrok
+        run: |
+          Invoke-WebRequest -Uri https://bin.equinox.io/c/111111/ngrok-stable-windows-amd64.zip -OutFile ngrok.zip
+          Expand-Archive ngrok.zip
+          Remove-Item ngrok.zip
+
+      - name: Set up ngrok
+        run: |
+          .\ngrok.exe authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
+          Start-Process -NoNewWindow -FilePath ".\ngrok.exe" -ArgumentList "tcp 3389" -PassThru | Out-Null
+          Start-Sleep -Seconds 5
+
+      - name: Get ngrok URL
+        id: ngrok
+        run: |
+          $output = curl -s http://localhost:4040/api/tunnels
+          $url = ($output | ConvertFrom-Json).tunnels[0].public_url
+          Write-Output "::set-output name=url::$url"
+
+      - name: Connect to RDP
+        run: |
+          echo "RDP URL: ${{ steps.ngrok.outputs.url }}"
+          echo "Use this URL to connect via RDP."
