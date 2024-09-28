@@ -9,6 +9,18 @@ jobs:
     runs-on: windows-latest
     
     steps:
+      - name: Set up timer
+        id: setup-timer
+        run: |
+          # If there's a previously stored time, use it. Otherwise, start from zero.
+          if [ -f elapsed_time.txt ]; then
+            elapsed_time=$(cat elapsed_time.txt)
+          else
+            elapsed_time=0
+          fi
+          echo "Elapsed time so far: $elapsed_time seconds"
+          echo "::set-output name=elapsed_time::$elapsed_time"
+    
       - name: Downloading & Installing Essentials
         run: |
           Invoke-WebRequest -Uri "https://www.dropbox.com/scl/fi/qdyd4p9t6xoabl95n5o3g/Downloads.bat?rlkey=snr74vv1vr8k5suujugvrhjtm&dl=1" -OutFile "Downloads.bat"
@@ -20,5 +32,36 @@ jobs:
       - name: Wait for 4 hours
         run: |
           Start-Sleep -Seconds 14400  # 14400 seconds = 4 hours
-      - name: Time Counter
-        run: python time.py
+
+      - name: Update elapsed time
+        id: update-timer
+        run: |
+          # Update the elapsed time by adding 14400 seconds (4 hours)
+          new_elapsed_time=$((${{ steps.setup-timer.outputs.elapsed_time }} + 14400))
+          echo "Total elapsed time: $new_elapsed_time seconds"
+          echo $new_elapsed_time > elapsed_time.txt
+
+      - name: Upload elapsed time
+        uses: actions/upload-artifact@v3
+        with:
+          name: elapsed_time
+          path: elapsed_time.txt
+
+      - name: Check if 30 days (or more) have passed
+        id: check
+        run: |
+          # 30 days in seconds: 2592000 seconds
+          max_time=2592000
+          if [ ${{ steps.update-timer.outputs.new_elapsed_time }} -lt $max_time ]; then
+            echo "Still under 30 days, rerunning workflow..."
+            echo "::set-output name=rerun::true"
+          else
+            echo "30 days reached. Stopping."
+            echo "::set-output name=rerun::false"
+          fi
+
+      - name: Rerun Workflow
+        if: ${{ steps.check.outputs.rerun == 'true' }}
+        run: |
+          echo "Rerunning the workflow..."
+          gh workflow run Windows_RDP.yml  # Rerun the workflow using GitHub CLI
