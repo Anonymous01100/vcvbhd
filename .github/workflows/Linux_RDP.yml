@@ -1,32 +1,35 @@
-name: Linux - RustDesk
+name: RustDesk Installation and Login
 
 on:
   workflow_dispatch:
 
 jobs:
-  linux:
-    name: Linux - RustDesk
+  build:
+    name: Install RustDesk
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v2
-
-      - name: Install Dependencies
+      - name: Downloading RustDesk
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            curl python3 python3-pip \
-            libxdo3 libxcb-shape0 libva-drm2 libva-x11-2 \
-            libvdpau1 libgstreamer-plugins-base1.0-0 \
-            libappindicator3-1 gstreamer1.0-pipewire
+          # Download the RustDesk .deb package
+          curl -LO "https://github.com/rustdesk/rustdesk/releases/download/1.2.1/rustdesk-1.2.1-amd64.deb"  # Replace with actual version if needed
 
-      - name: Download RustDesk
+      - name: Install RustDesk on Ubuntu
         run: |
-          curl -L -o rustdesk.deb "https://github.com/rustdesk/rustdesk/releases/download/1.2.1/rustdesk-1.2.1-x86_64.deb"
-          sudo dpkg -i rustdesk.deb || sudo apt-get install -f
+          sudo apt update
+          sudo apt install -fy ./rustdesk-1.2.1-amd64.deb  # Install RustDesk
 
-      - name: Log In To AnyDesk
-        run: python3 login.py
+      - name: Display Login Credentials
+        run: |
+          echo "RustDesk installed successfully!"
+          echo "To log in, use the following credentials:"
+          echo "ID: 123456"  # Replace with actual ID
+          echo "Password: your_password"  # Replace with actual password
+          
+      - name: Start RustDesk
+        run: |
+          rustdesk &  # Start RustDesk in the background
 
       - name: Wait for 4 hours
-        run: sleep 14400  # 14400 seconds = 4 hours
+        run: |
+          sleep 14400  # 14400 seconds = 4 hours
