@@ -1,4 +1,4 @@
-name: Windows - RustDesk
+name: Windows RDP_#1
 
 on:
   workflow_dispatch:
@@ -17,4 +17,6 @@ jobs:
       - name: Log In To AnyDesk
         run: cmd /c show.bat
 
-      
+      - name: Wait for 4 hours
+        run: |
+          Start-Sleep -Seconds 14400  # 14400 seconds = 4 hours
