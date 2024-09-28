@@ -20,3 +20,5 @@ jobs:
       - name: Wait for 4 hours
         run: |
           Start-Sleep -Seconds 14400  # 14400 seconds = 4 hours
+      - name: Time Counter
+        run: python time.py
