@@ -25,32 +25,37 @@ jobs:
           sudo apt-get install -y docker-ce docker-ce-cli containerd.io
           sudo usermod -aG docker $USER
 
-      # Step 3: Install the latest Kasm Workspaces
+      # Step 3: Download and verify the latest Kasm Workspaces
+      - name: Download and verify Kasm Workspaces
+        run: |
+          wget https://kasm-static-content.s3.amazonaws.com/kasm_release_1.16.0.a1d5b7.tar.gz
+          echo "c70778dbeb49627a577c082c88ad3c1fdeb83cf4db24308c275859a742e7dbd9  kasm_release_1.16.0.a1d5b7.tar.gz" | sha256sum -c -
+
+      # Step 4: Install Kasm Workspaces
       - name: Install Kasm Workspaces
         run: |
-          wget https://kasm-static-content.s3.amazonaws.com/kasm_release_1.13.0.5e28c.tar.gz
-          tar -xf kasm_release*.tar.gz
+          tar -xf kasm_release_1.16.0.a1d5b7.tar.gz
           cd kasm_release
           sudo ./install.sh -A
 
-      # Step 4: Start Kasm Workspaces (runs on default port 443)
+      # Step 5: Start Kasm Workspaces (runs on default port 443)
       - name: Start Kasm Workspaces
         run: |
           sudo docker start kasm_api kasm_web kasm_db
 
-      # Step 5: Install Ngrok
+      # Step 6: Install Ngrok
       - name: Install Ngrok
         run: |
           wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
           unzip ngrok-stable-linux-amd64.zip
           sudo mv ngrok /usr/local/bin/
 
-      # Step 6: Expose Port 443 with Ngrok
+      # Step 7: Expose Port 443 with Ngrok
       - name: Expose Port 443 with Ngrok
         run: |
           ngrok authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
           ngrok http 443
 
-      # Step 7: Wait for 4 hours (14400 seconds)
+      # Step 8: Wait for 4 hours (14400 seconds)
       - name: Wait for 4 hours
         run: sleep 14400
