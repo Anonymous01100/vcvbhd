@@ -1,4 +1,4 @@
-name: Install and Run Kasm with Ngrok
+name: Install Kasm Workspaces
 
 on:
   push:
@@ -14,50 +14,45 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Install necessary dependencies (Docker, etc.)
-      - name: Install Docker
+      # Step 2: Install necessary dependencies (Docker, Python)
+      - name: Install Docker and Python
         run: |
           sudo apt-get update
-          sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+          sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common python3 python3-pip
           curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
           sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
           sudo apt-get update
           sudo apt-get install -y docker-ce docker-ce-cli containerd.io
           sudo usermod -aG docker $USER
 
-      # Step 3: Download and verify the latest Kasm Workspaces
-      - name: Download and verify Kasm Workspaces
+      # Step 3: Create Python installation script
+      - name: Create Kasm installation script
         run: |
-          wget https://kasm-static-content.s3.amazonaws.com/kasm_release_1.16.0.a1d5b7.tar.gz
-          echo "c70778dbeb49627a577c082c88ad3c1fdeb83cf4db24308c275859a742e7dbd9  kasm_release_1.16.0.a1d5b7.tar.gz" | sha256sum -c -
+          echo 'import subprocess' > install_kasm.py
+          echo 'import os' >> install_kasm.py
+          echo 'def run_command(command):' >> install_kasm.py
+          echo '    try:' >> install_kasm.py
+          echo '        subprocess.run(command, check=True, shell=True)' >> install_kasm.py
+          echo '    except subprocess.CalledProcessError as e:' >> install_kasm.py
+          echo '        print(f"Error occurred: {e}")' >> install_kasm.py
+          echo '        exit(1)' >> install_kasm.py
+          echo 'def install_kasm():' >> install_kasm.py
+          echo '    os.makedirs("/tmp/kasm_install", exist_ok=True)' >> install_kasm.py
+          echo '    os.chdir("/tmp/kasm_install")' >> install_kasm.py
+          echo '    run_command("curl -O https://kasm-static-content.s3.amazonaws.com/kasm_release_1.16.0.f2d6e1.tar.gz")' >> install_kasm.py
+          echo '    run_command("tar -xf kasm_release_1.16.0.f2d6e1.tar.gz")' >> install_kasm.py
+          echo '    run_command("sudo bash kasm_release/install.sh")' >> install_kasm.py
+          echo '    print("Kasm Workspaces installation completed successfully.")' >> install_kasm.py
+          echo 'if __name__ == "__main__":' >> install_kasm.py
+          echo '    install_kasm()' >> install_kasm.py
 
-      # Step 4: Install Kasm Workspaces
-      - name: Install Kasm Workspaces
+      # Step 4: Run the installation script
+      - name: Run Kasm installation script
         run: |
-          tar -xf kasm_release_1.16.0.a1d5b7.tar.gz
-          cd kasm_release
-          echo -e "#!/bin/bash\n\nuser_input='y'\n# Automatic acceptance of EULA\nif [ \"\$user_input\" == \"y\" ]; then\n    echo \"Installing Kasm...\"\nelse\n    echo \"Installation aborted.\"\n    exit 1\nfi\n\necho \"Kasm installed!\"" > modified_install.sh
-          chmod +x modified_install.sh
-          sudo ./modified_install.sh -A
-      
-      # Step 5: Start Kasm Workspaces (runs on default port 443)
-      - name: Start Kasm Workspaces
-        run: |
-          sudo docker start kasm_api kasm_web kasm_db
+          python3 install_kasm.py
 
-      # Step 6: Install Ngrok
-      - name: Install Ngrok
-        run: |
-          wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
-          unzip ngrok-stable-linux-amd64.zip
-          sudo mv ngrok /usr/local/bin/
-
-      # Step 7: Expose Port 443 with Ngrok
-      - name: Expose Port 443 with Ngrok
-        run: |
-          ngrok authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
-          ngrok http 443
-
-      # Step 8: Wait for 4 hours (14400 seconds)
-      - name: Wait for 4 hours
-        run: sleep 14400
+      # Step 5: Start Kasm Workspaces (if applicable)
+      # Uncomment if you need to start specific containers after installation.
+      # - name: Start Kasm Workspaces
+      #   run: |
+      #     sudo docker start kasm_api kasm_web kasm_db
