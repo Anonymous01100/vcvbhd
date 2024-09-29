@@ -1,0 +1,56 @@
+name: Install and Run Kasm with Ngrok
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  setup-kasm:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout code (if needed)
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Install necessary dependencies (Docker, etc.)
+      - name: Install Docker
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+          sudo apt-get update
+          sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+          sudo usermod -aG docker $USER
+
+      # Step 3: Install the latest Kasm Workspaces
+      - name: Install Kasm Workspaces
+        run: |
+          wget https://kasm-static-content.s3.amazonaws.com/kasm_release_1.13.0.5e28c.tar.gz
+          tar -xf kasm_release*.tar.gz
+          cd kasm_release
+          sudo ./install.sh -A
+
+      # Step 4: Start Kasm Workspaces (runs on default port 443)
+      - name: Start Kasm Workspaces
+        run: |
+          sudo docker start kasm_api kasm_web kasm_db
+
+      # Step 5: Install Ngrok
+      - name: Install Ngrok
+        run: |
+          wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
+          unzip ngrok-stable-linux-amd64.zip
+          sudo mv ngrok /usr/local/bin/
+
+      # Step 6: Expose Port 443 with Ngrok
+      - name: Expose Port 443 with Ngrok
+        run: |
+          ngrok authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
+          ngrok http 443
+
+      # Step 7: Wait for 4 hours (14400 seconds)
+      - name: Wait for 4 hours
+        run: sleep 14400
